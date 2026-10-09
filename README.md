@@ -1,24 +1,50 @@
-# SisaBaik
 
-SisaBaik adalah proyek berbem bang pada mata kuliah Pengembangan Web. Aplikasi ini dirancang untuk membantu penyedia makanan menjual stok makanan berlebih melalui penjualan dengan harga khusus atau penyaluran, sekaligus membantu masyarakat memperoleh makanan yang lebih terjangkau dan mengurangi limbah pangan.
+## Chapter 7 — REST API PostgreSQL
 
-# Capaian Chapter 2
+### Prasyarat
 
-- Membuat halaman informasi SisaBaik dengan semantic HTML.
-- Membuat formulir pendaftaran penyedia yang aksesibel.
-- Membuat formulir penawaran makanan berlebih yang aksesibel.
-- Mengelola perubahan kode dengan Git dan GitHub.
+- Node.js versi 22 atau lebih baru.
+- PostgreSQL lokal.
+- Database `sisabaik_dev` dan skema Chapter 6.
+- File `.env` yang berisi konfigurasi database lokal.
 
-# Halaman
+### Menjalankan aplikasi
 
-- index.html : halaman informasi SisaBaik.
-- daftar-penyedia.html : formulir pendaftaran penyedia.
-- tawarkan-makanan.html : formulir penawaran makanan berlebih.
+Jalankan seluruh perintah dari root folder `sisabaik-api`.
 
-# Menjalankan proyek
+```bash
+npm install
+npm run db:check -- 0
+npm run dev
+```
 
-Buka folder proyek di Visual Studio Code, lalu tampilkan `index.html` menggunakan Live Preview atau browser. Pada tahap ini, formulir hanya merupakan prototipe HTML: data belum disimpan ke server atau basis data.
+Buka aplikasi lokal:
 
-# Integritas akademik
+- Halaman penguji: http://127.0.0.1:3000/
+- Health check: http://127.0.0.1:3000/api/health
+- Daftar penawaran: http://127.0.0.1:3000/api/penawaran
 
-Penggunaan proyek berkembang mengikuti kebijakan mata kuliah. AI generatif tidak diperkenankan pada tahap ini. Mahasiswa wajib mampu menjelaskan setiap elemen dan atribut yang digunakan.
+### Pengujian
+
+Dengan server berjalan di terminal pertama, gunakan terminal kedua:
+
+```bash
+npm run api:test
+node scripts/uji-konkurensi.js
+```
+
+Pengujian mutasi membuat data latihan di database lokal. Jalankan hanya pada database praktikum.
+
+### Perubahan API
+
+- Data penawaran disimpan melalui PostgreSQL, bukan array dalam memori.
+- Request pesanan menggunakan `emailPembeli`, bukan `namaPemesan`.
+- `penawaranId` dikirim sebagai string.
+- Pesanan menggunakan transaksi database, validasi stok, dan snapshot harga.
+- Endpoint mutasi belum memiliki autentikasi.
+
+### Konfigurasi dan keamanan
+
+Salin konfigurasi dari `.env.example` untuk menyiapkan `.env` lokal, lalu isi kredensial database sendiri. Jangan commit `.env`, password, atau data pribadi.
+
+Dokumentasi endpoint lengkap tersedia pada `docs/API.md`.
