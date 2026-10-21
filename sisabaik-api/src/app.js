@@ -1,8 +1,8 @@
-
 import express from "express";
 import { fileURLToPath } from "node:url";
 import { pool } from "./db/pool.js";
 import { HttpError } from "./lib/api.js";
+import authRoutes from "./routes/auth.js";
 import penawaranRouter from "./routes/penawaran.js";
 import pesananRouter from "./routes/pesanan.js";
 import { catatRequest } from "./middleware/catat-request.js";
@@ -54,6 +54,7 @@ app.get("/api/health", async (req, res) => {
   });
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/penawaran", penawaranRouter);
 app.use("/api/pesanan", pesananRouter);
 
