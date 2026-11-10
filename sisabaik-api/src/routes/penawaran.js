@@ -1,6 +1,5 @@
-
 import { Router } from "express";
-import * as controller from "../controllers/penawaran.js";
+import * as c from "../controllers/penawaran.js";
 import {
   wajibLogin,
   wajibPeran,
@@ -8,18 +7,17 @@ import {
 } from "../middleware/auth.js";
 
 const router = Router();
-
 const penyedia = [
   wajibLogin,
   wajibPeran("penyedia"),
   wajibPenyediaTerverifikasi,
 ];
-
-router.get("/", controller.daftar);
-router.get("/milik-saya", ...penyedia, controller.milikSaya);
-router.get("/:id", controller.detail);
-router.post("/", ...penyedia, controller.buat);
-router.put("/:id", ...penyedia, controller.ubah);
-router.delete("/:id", ...penyedia, controller.hapus);
-
+router.get("/", c.daftar);
+router.get("/milik-saya", ...penyedia, c.milikSaya);
+router.get("/milik-saya/:id", ...penyedia, c.detailMilikSaya);
+router.get("/:id/foto", c.foto);
+router.get("/:id", c.detail);
+router.post("/", ...penyedia, c.buat);
+router.put("/:id", ...penyedia, c.ubah);
+router.delete("/:id", ...penyedia, c.hapus);
 export default router;

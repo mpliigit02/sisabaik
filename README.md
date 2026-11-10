@@ -213,3 +213,154 @@ Autentikasi, otorisasi, verifikasi penyedia, dan penyimpanan permanen tetap dita
 Berdasarkan hasil implementasi dan pengujian, pengembangan antarmuka SisaBaik pada Chapter 9 telah berhasil diselesaikan. Aplikasi dapat menampilkan katalog makanan, melakukan pencarian dan penyaringan, menampilkan dashboard penyedia, memvalidasi formulir penawaran, serta memperbarui tampilan berdasarkan perubahan state.
 
 Proses build dan preview produksi juga berhasil dijalankan. Dengan demikian, implementasi frontend pada tahap ini dinyatakan berhasil dan siap dilanjutkan ke tahap integrasi frontend dengan API backend.
+
+
+## Integrasi Full Stack — Chapter 10
+
+### 1. Lingkungan Pengembangan
+
+Aplikasi SisaBaik dikembangkan menggunakan Vue 3, Vite, Node.js, Express, dan PostgreSQL. Frontend Vue terintegrasi dengan backend REST API Express untuk mengelola autentikasi, penawaran, pesanan, dan dashboard berdasarkan peran pengguna.
+
+Baseline lingkungan pada modul:
+- Node.js: 24.19.0
+- npm: 11.9.0
+- Vue: 3.5.43
+- Vite: 8.3.3
+- Vue Router: 4.6.4
+- PostgreSQL sebagai basis data utama.
+
+### 2. Menjalankan Aplikasi
+
+**Backend — Development**
+
+Dari direktori `sisabaik-api`:
+
+```bash
+npm ci
+npm run dev
+```
+
+Backend berjalan pada `http://127.0.0.1:3000`.
+
+**Frontend — Development**
+
+Dari direktori `sisabaik-api/frontend`:
+
+```bash
+npm ci
+npm run dev
+```
+
+Frontend berjalan melalui Vite, umumnya pada `http://127.0.0.1:5173`.
+
+**Build dan Preview Frontend**
+
+Dari direktori `frontend`:
+
+```bash
+npm run build
+npm run preview
+```
+
+Hasil build disimpan pada direktori `frontend/dist`. Preview secara default berjalan pada port 4173.
+
+**Build dan Menjalankan Aplikasi Terpadu**
+
+Dari root backend:
+
+```bash
+npm run build
+npm run start:local
+```
+
+Aplikasi dapat diakses melalui `http://127.0.0.1:3000/`. Express menyajikan hasil build Vue sekaligus REST API.
+
+### 3. Integrasi Frontend dan Backend
+
+Frontend berkomunikasi dengan backend melalui endpoint REST API dengan prefix `/api`.
+
+Pada mode development, Vite menggunakan konfigurasi proxy untuk meneruskan request `/api` ke backend `http://127.0.0.1:3000`. Dengan demikian, frontend dapat mengakses API tanpa perlu mengatur alamat backend secara terpisah pada setiap request.
+
+Pada mode production lokal, frontend hasil build dan backend disajikan melalui satu server Express.
+
+### 4. Autentikasi dan Hak Akses
+
+Aplikasi menyediakan registrasi dan login untuk dua jenis pengguna, yaitu pembeli dan penyedia.
+
+- Pengguna membuat akun menggunakan kata sandi sendiri.
+- Penyedia melengkapi profil usaha dan menunggu proses verifikasi sebelum memperoleh akses sesuai ketentuan aplikasi.
+- Autentikasi menggunakan token JWT yang dikirim melalui Bearer token.
+- Hak akses dan kepemilikan data diperiksa kembali oleh backend.
+- Pembeli dapat melihat katalog, membuat pesanan, dan memantau status pesanan.
+- Penyedia dapat mengelola penawaran serta memproses pesanan masuk.
+
+### 5. Pengelolaan Penawaran dan Pesanan
+
+Penawaran dapat dibuat dan diperbarui oleh penyedia yang memiliki data tersebut. Foto bersifat opsional. Backend memproses foto yang valid menjadi WebP dan menyediakan gambar fallback apabila foto tidak tersedia.
+
+Pembaruan penawaran menggunakan mekanisme versi data untuk mencegah perubahan yang menggunakan data usang. Riwayat pesanan menyimpan snapshot nama penawaran, harga, dan satuan sehingga perubahan penawaran tidak mengubah transaksi yang telah dibuat.
+
+Alur pesanan mencakup:
+- Pembuatan pesanan dan reservasi stok.
+- Konfirmasi atau penolakan oleh penyedia.
+- Pembaruan status menjadi siap diambil.
+- Serah terima dan pembayaran di tempat.
+- Pembatalan sesuai aturan status pesanan.
+
+Reservasi mengurangi stok satu kali. Pembatalan atau penolakan yang valid dapat memulihkan stok, dengan perlindungan agar pemulihan tidak dilakukan berulang kali.
+
+### 6. Pembayaran dan Dashboard
+
+Pembayaran dilakukan saat pengambilan pesanan. Aplikasi belum menggunakan payment gateway eksternal.
+
+Dashboard mengambil agregasi data dari server berdasarkan cakupan akun dan peran pengguna. Metrik yang ditampilkan mencakup belanja, pendapatan, diskon, unit tersalurkan, nilai normal makanan, serta pembatalan.
+
+Pesanan yang masih menunggu atau baru siap diambil tidak langsung dihitung sebagai pendapatan maupun pengambilan selesai. Pesanan gratis juga tidak menambah pendapatan.
+
+### 7. Batasan Implementasi
+
+Batasan aplikasi pada tahap integrasi ini meliputi:
+- Token sesi disimpan di memori halaman sehingga sesi login hilang ketika halaman di-refresh dan pengguna perlu login kembali.
+- Belum tersedia payment gateway.
+- Belum tersedia fitur reset kata sandi.
+- Belum tersedia verifikasi email.
+- Belum tersedia idempotency key untuk perlindungan menyeluruh terhadap pengulangan request transaksi.
+- Belum tersedia pembaruan data secara realtime.
+
+### 8. Hasil Pengujian
+
+Pengujian otomatis workflow transaksi dilakukan melalui perintah:
+
+```bash
+npm run workflow:test
+```
+
+**Hasil: 26 skenario alur transaksi lulus.**
+
+Cakupan pengujian otomatis meliputi:
+- Fallback foto dan versi awal penawaran.
+- Reservasi stok dan penggunaan harga dari server.
+- Pembatasan akses berdasarkan peran dan kepemilikan pesanan.
+- Pembatalan dan penolakan serta pemulihan stok.
+- Pencegahan pemulihan stok berulang.
+- Konfirmasi, kesiapan pengambilan, dan serah terima berbayar.
+- Penyelesaian pesanan gratis tanpa penambahan pendapatan.
+- Perhitungan dashboard berdasarkan transaksi.
+- Pemrosesan foto PNG menjadi WebP.
+- Penolakan SVG dan berkas foto palsu.
+- Edit penawaran, kepemilikan foto, dan pemulihan gambar fallback.
+- Pencegahan perubahan penawaran menggunakan versi data usang.
+- Penanganan pembatalan dan konfirmasi yang berlangsung bersamaan.
+- Pencegahan reservasi melebihi stok yang tersedia.
+
+Seluruh fixture pengujian otomatis berhasil dibersihkan setelah proses selesai.
+
+**Pengujian build frontend**
+
+Perintah `npm run build` berhasil dijalankan dari direktori frontend. Vite berhasil memproses 55 modul dan menghasilkan direktori `dist` tanpa error kompilasi.
+
+**Pemeriksaan integrasi lokal**
+
+Backend berhasil dijalankan dalam mode development. Endpoint `/api/health` menunjukkan status berhasil dan koneksi database terhubung. Frontend juga berhasil mengakses endpoint tersebut melalui proxy Vite.
+
+**Catatan:** Pengujian build backend, preview production, serta seluruh skenario pengujian manual perlu dicatat berdasarkan hasil eksekusi aktual masing-masing. Hasil pengujian otomatis tidak menggantikan seluruh pengujian browser dan deployment.

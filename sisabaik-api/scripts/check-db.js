@@ -1,4 +1,3 @@
-
 import { pool } from "../src/db/pool.js";
 
 const stokMinimum = Number(process.argv[2] ?? 1);
