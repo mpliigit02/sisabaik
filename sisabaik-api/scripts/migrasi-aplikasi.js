@@ -1,9 +1,11 @@
+
 import { readFile } from "node:fs/promises";
 import { pool } from "../src/db/pool.js";
 import { transaksi } from "../src/db/transaksi.js";
 
 try {
   const cloud = process.argv.includes("--cloud");
+
   if (cloud) {
     if (
       !(process.env.PGHOST ?? "").endsWith(".neon.tech") ||
@@ -23,45 +25,66 @@ try {
       "Gunakan sisabaik_dev lokal. Untuk Neon demo gunakan db:migrate:cloud.",
     );
   }
+
   const sql = [];
+
   for (const nama of ["07_auth.sql", "12_alur_transaksi.sql"]) {
     const teks = await readFile(
       new URL("../database/" + nama, import.meta.url),
       "utf8",
     );
+
     if (!/^\s*BEGIN;/.test(teks) || !/COMMIT;\s*$/.test(teks)) {
       throw new Error("Batas transaksi migrasi tidak sesuai: " + nama);
     }
-    sql.push(teks.replace(/^\s*BEGIN;/, "").replace(/COMMIT;\s*$/, ""));
+
+    sql.push(
+      teks.replace(/^\s*BEGIN;/, "").replace(/COMMIT;\s*$/, ""),
+    );
   }
+
   await transaksi(async (client) => {
     await client.query("SELECT pg_advisory_xact_lock(74091211)");
-    const cek = await client.query(`SELECT current_database() AS nama,
+
+    const cek = await client.query(`
+      SELECT current_database() AS nama,
       to_regclass('public.pengguna') AS pengguna,
       to_regclass('public.penawaran') AS penawaran,
-      to_regclass('public.pesanan') AS pesanan,
-      (SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()) AS tls`);
+      to_regclass('public.pesanan') AS pesanan
+    `);
+
     const db = cek.rows[0];
+
     const tujuan = cloud
       ? (process.env.CLOUD_CONFIRM_DATABASE ??
         process.env.DEMO_CONFIRM_DATABASE)
       : "sisabaik_dev";
+
+    const tlsAktif =
+      client.connection.stream.encrypted === true &&
+      client.connection.stream.authorized === true;
+
     if (
       db.nama !== tujuan ||
       !db.pengguna ||
       !db.penawaran ||
       !db.pesanan ||
-      (cloud && !db.tls)
+      (cloud && !tlsAktif)
     ) {
       throw new Error(
         "Database tujuan atau schema dasar belum sesuai. Data tidak direset.",
       );
     }
-    for (const teks of sql) await client.query(teks);
+
+    for (const teks of sql) {
+      await client.query(teks);
+    }
   });
+
   console.log(
     "Migrasi autentikasi dan alur transaksi selesai. Data serta password lama dipertahankan.",
   );
+
   console.log(
     "Untuk akun lokal yang belum memiliki password: jalankan npm run db:auth.",
   );
