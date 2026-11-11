@@ -8,16 +8,24 @@ Thumbs.db
 
 # Node / frontend tools
 node_modules/
+frontend/node_modules/
 npm-debug.log*
 
 # Build outputs
 /dist/
 /build/
 /.cache/
+frontend/dist/
 
 # Environment files
 .env
 .env.*
+!.env.example
+!.env.cloud.example
+!.env.production-local.example
 
 # Logs
 *.log
+
+# Database backups
+backups/
